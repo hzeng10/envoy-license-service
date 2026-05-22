@@ -1,0 +1,26 @@
+# Patch the Istio mesh configuration to register the license ext_authz service as an extension provider.
+# Apply with: kubectl apply -f 04-istio-extensionprovider.yaml
+#
+# This patches the 'istio' ConfigMap in the istio-system namespace. If you manage Istio via
+# IstioOperator, add the extensionProviders block to your IstioOperator manifest instead.
+#
+# NOTE: After applying, restart istiod so it picks up the new mesh config:
+#   kubectl rollout restart deployment/istiod -n istio-system
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio
+  namespace: istio-system
+data:
+  mesh: |-
+    # Preserve any existing mesh config above this line and append the block below.
+    extensionProviders:
+    - name: license-ext-authz
+      envoyExtAuthzGrpc:
+        service: license-validation-service.default.svc.cluster.local
+        port: "9191"
+        timeout: 0.25s
+        failOpen: false
+        includeRequestBodyInCheck:
+          maxRequestBytes: 8192
+          allowPartialMessage: true

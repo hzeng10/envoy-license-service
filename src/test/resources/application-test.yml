@@ -1,0 +1,11 @@
+license:
+  rules-file: src/test/resources/test-rules.yml
+  watch-interval-seconds: 1
+  grpc-port: 19191
+  grpc-reflection: true
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: false

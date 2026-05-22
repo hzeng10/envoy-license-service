@@ -1,0 +1,37 @@
+defaults:
+  unmatchedPolicy: allow
+  cacheTtlSeconds: 30
+  negativeCacheTtlSeconds: 5
+  deny:
+    status: 403
+    body: '{"code":"LICENSE_INVALID"}'
+    headers:
+      content-type: application/json
+
+rules:
+  - id: orders-api
+    match:
+      path: /api/orders/**
+      methods: [GET, POST]
+    validator: default-header-token
+    config:
+      headerName: X-License-Token
+      expectedToken: test-token-123
+      validFrom: 2020-01-01T00:00:00Z
+      validUntil: 2099-12-31T23:59:59Z
+
+  - id: admin-exact
+    match:
+      path: exact:/admin/health
+      methods: [GET]
+    validator: default-header-token
+    config:
+      expectedToken: admin-secret
+
+  - id: regex-test
+    match:
+      path: regex:^/items/[0-9]+$
+      methods: [GET]
+    validator: default-header-token
+    config:
+      expectedToken: regex-token

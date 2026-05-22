@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: license-rules
+  namespace: default
+  labels:
+    app: license-validation-service
+data:
+  license-rules.yml: |
+    defaults:
+      unmatchedPolicy: allow
+      cacheTtlSeconds: 30
+      negativeCacheTtlSeconds: 5
+      flushCacheOnReload: false
+      remote:
+        timeoutMs: 100
+        bulkheadMaxConcurrent: 64
+        onFailure: failClosed
+        circuitBreaker:
+          failureRateThreshold: 50.0
+          slidingWindowSize: 50
+          openStateSeconds: 10
+          halfOpenPermitted: 5
+      deny:
+        status: 403
+        body: '{"code":"LICENSE_INVALID","message":"License rule violated"}'
+        headers:
+          content-type: application/json
+
+    rules:
+      - id: example-api
+        match:
+          path: /api/**
+          methods: [GET, POST, PUT, DELETE]
+        validator: default-header-token
+        config:
+          headerName: X-License-Token
+          expectedToken: ${LICENSE_TOKEN:demo-token}
+          validFrom: 2026-01-01T00:00:00Z
+          validUntil: 2030-12-31T23:59:59Z

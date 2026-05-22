@@ -1,0 +1,20 @@
+# Routes ALL traffic in the default namespace through the license ext_authz service.
+# Requirement #5: configured URLs cannot reach backends without passing through this service.
+#
+# WARNING: Do NOT add notPaths exclusions for any URL listed in license-rules.yml.
+# Excluding a configured URL would allow it to bypass license validation.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: license-gate
+  namespace: default
+spec:
+  action: CUSTOM
+  provider:
+    name: license-ext-authz
+  rules:
+    - to:
+        - operation:
+            # Intercept all paths; the ext_authz service decides allow/deny based on its rule set.
+            paths:
+              - "/*"

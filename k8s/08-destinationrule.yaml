@@ -1,0 +1,13 @@
+# Disables Istio mTLS and metadata-exchange TCP prefix for the license service.
+# Without this, Envoy's istio.metadata_exchange filter injects a binary "magic"
+# prefix before the HTTP/2 preface, corrupting gRPC framing on the non-sidecar pod.
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: license-validation-service-notls
+  namespace: default
+spec:
+  host: license-validation-service.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

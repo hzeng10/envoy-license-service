@@ -1,0 +1,49 @@
+# Minimal httpbin test workload. sidecar.istio.io/inject: "true" opts this pod into Istio
+# sidecar injection without requiring a namespace-level label — the webhook
+# object.sidecar-injector.istio.io handles per-object opt-in on unlabeled namespaces.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: default
+  labels:
+    app: httpbin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+        - name: httpbin
+          image: kennethreitz/httpbin
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: default
+  labels:
+    app: httpbin
+spec:
+  selector:
+    app: httpbin
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

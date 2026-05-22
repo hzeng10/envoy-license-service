@@ -1,0 +1,32 @@
+# Wires the license ext_authz gRPC service into every Envoy sidecar in the default namespace.
+# Uses EnvoyFilter so the istio-system/istio ConfigMap is never modified.
+# The filter is inserted BEFORE envoy.filters.http.router on all SIDECAR_INBOUND filter chains.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: license-ext-authz
+  namespace: default
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.ext_authz
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+          grpc_service:
+            envoy_grpc:
+              cluster_name: outbound|9191||license-validation-service.default.svc.cluster.local
+            timeout: 0.25s
+          transport_api_version: V3
+          failure_mode_allow: false
+          include_peer_certificate: false
