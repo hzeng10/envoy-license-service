@@ -30,12 +30,13 @@ public class ValidationCache {
     }
 
     /**
-     * Returns a cached result if still valid, or invokes {@code loader} to compute a fresh one.
+     * 若缓存中存在未过期的结果则直接返回；否则调用 {@code loader} 生成新结果并写入缓存。
+     * 并发相同 key 的请求共享同一个 in-flight Future，防止缓存击穿。
      *
-     * @param key         cache key (ruleId + token)
-     * @param ttlSeconds  positive-result TTL in seconds
-     * @param negTtlSec   negative-result TTL in seconds
-     * @param loader      async function called on cache miss; must not return null
+     * @param key         缓存键（ruleId + token）
+     * @param ttlSeconds  校验通过结果的 TTL（秒）
+     * @param negTtlSec   校验拒绝结果的 TTL（秒）
+     * @param loader      缓存未命中时调用的异步加载函数，不得返回 null
      */
     public CompletableFuture<ValidationResult> getOrLoad(
             CacheKey key, int ttlSeconds, int negTtlSec,
@@ -61,10 +62,12 @@ public class ValidationCache {
         });
     }
 
+    /** 删除与指定规则 ID 关联的所有缓存条目（通常在规则热重载后按需调用）。 */
     public void invalidate(String ruleId) {
         cache.synchronous().asMap().keySet().removeIf(k -> k.ruleId().equals(ruleId));
     }
 
+    /** 清空全部缓存条目。 */
     public void invalidateAll() {
         cache.synchronous().invalidateAll();
     }

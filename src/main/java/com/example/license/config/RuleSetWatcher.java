@@ -36,6 +36,7 @@ public class RuleSetWatcher implements SmartLifecycle {
     private FileTime lastModified;
     private volatile boolean running = false;
 
+    /** 初始化文件监视器，注册成功/失败计数器到 Micrometer。 */
     public RuleSetWatcher(String rulesFile, int intervalSeconds, RuleSetLoader loader,
                           RuleSetHolder holder, MeterRegistry meterRegistry) {
         this.rulesFile = rulesFile;
@@ -50,6 +51,7 @@ public class RuleSetWatcher implements SmartLifecycle {
                 .register(meterRegistry);
     }
 
+    /** 启动定时轮询任务，以固定间隔检查规则文件的最后修改时间。 */
     @Override
     public void start() {
         running = true;
@@ -57,6 +59,7 @@ public class RuleSetWatcher implements SmartLifecycle {
         log.info("Rule watcher started, polling '{}' every {}s", rulesFile, intervalSeconds);
     }
 
+    /** 取消轮询任务并关闭调度线程池。 */
     @Override
     public void stop() {
         running = false;
@@ -65,6 +68,7 @@ public class RuleSetWatcher implements SmartLifecycle {
         log.info("Rule watcher stopped");
     }
 
+    /** 返回轮询任务是否处于运行状态。 */
     @Override
     public boolean isRunning() {
         return running;

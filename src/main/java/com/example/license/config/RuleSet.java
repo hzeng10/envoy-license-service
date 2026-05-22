@@ -15,7 +15,8 @@ public record RuleSet(
     }
 
     /**
-     * Returns the first rule whose matcher accepts the given path+method, or {@code null} if none match.
+     * 按声明顺序逐条匹配规则，返回第一条满足路径和 HTTP 方法的规则；
+     * 如果没有匹配的规则则返回 {@code null}。
      */
     public CompiledRule match(String path, String method) {
         for (CompiledRule rule : rules) {

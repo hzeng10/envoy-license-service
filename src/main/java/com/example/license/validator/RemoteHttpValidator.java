@@ -49,11 +49,16 @@ public class RemoteHttpValidator implements LicenseValidator {
         this.httpClient = httpClient;
     }
 
+    /** 返回校验器名称，与规则 YAML 中的 {@code validator: remote-http} 对应。 */
     @Override
     public String name() {
         return "remote-http";
     }
 
+    /**
+     * 异步向许可证后端发送 HTTP 请求，根据响应状态码决定放行或拒绝。
+     * 若规则配置了 {@code remoteConfig}，则套用熔断/限流/超时保护；否则直接发送请求。
+     */
     @Override
     public CompletableFuture<ValidationResult> validate(ValidationRequest request) {
         Map<String, Object> cfg = request.rule().config();

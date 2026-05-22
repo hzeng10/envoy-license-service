@@ -1,31 +1,37 @@
+# 全局默认值，所有规则字段均可覆盖此处的配置
 defaults:
-  unmatchedPolicy: allow
-  cacheTtlSeconds: 30
-  negativeCacheTtlSeconds: 5
-  flushCacheOnReload: false
-  remote:
-    timeoutMs: 100
-    bulkheadMaxConcurrent: 64
-    onFailure: failClosed
-    circuitBreaker:
-      failureRateThreshold: 50.0
-      slidingWindowSize: 50
-      openStateSeconds: 10
-      halfOpenPermitted: 5
-  deny:
-    status: 403
-    body: '{"code":"LICENSE_INVALID","message":"License rule violated"}'
-    headers:
-      content-type: application/json
+  unmatchedPolicy: allow       # 无匹配规则时的策略：allow（放行）或 deny（拒绝）
+  cacheTtlSeconds: 30          # 校验通过结果的缓存 TTL（秒）
+  negativeCacheTtlSeconds: 5   # 校验拒绝结果的缓存 TTL（秒），较短以快速响应 token 更新
+  flushCacheOnReload: false     # 规则热重载时是否清空缓存；false 表示依赖 TTL 自然过期
 
+  # 远程校验器的弹性配置（对 default-header-token 无效，仅对 remote-http 生效）
+  remote:
+    timeoutMs: 100                # 单次远程调用超时时间（毫秒）
+    bulkheadMaxConcurrent: 64     # 最大并发远程调用数，超出后触发 onFailure 策略
+    onFailure: failClosed         # 远程调用失败时的策略：failClosed（拒绝）或 failOpen（放行）
+    circuitBreaker:
+      failureRateThreshold: 50.0  # 触发熔断的失败率阈值（百分比）
+      slidingWindowSize: 50       # 计算失败率的滑动窗口请求数
+      openStateSeconds: 10        # 熔断器保持开启的时长（秒）
+      halfOpenPermitted: 5        # 半开状态允许通过的试探请求数
+
+  # 全局拒绝响应配置
+  deny:
+    status: 403                                                        # HTTP 状态码
+    body: '{"code":"LICENSE_INVALID","message":"License rule violated"}' # 响应体（JSON）
+    headers:
+      content-type: application/json  # 拒绝响应的 Content-Type 头
+
+# 规则列表（按声明顺序匹配，第一条命中的规则生效）
 rules:
-  - id: example-api
+  - id: example-api          # 规则唯一标识，用于日志、指标和缓存键
     match:
-      path: /api/**
-      methods: [GET, POST, PUT, DELETE]
-    validator: default-header-token
+      path: /api/**           # 路径匹配模式：Ant 风格，匹配所有 /api/ 前缀路径
+      methods: [GET, POST, PUT, DELETE]  # 允许校验的 HTTP 方法
+    validator: default-header-token      # 使用内置 Header Token 校验器
     config:
-      headerName: X-License-Token
-      expectedToken: ${LICENSE_TOKEN:demo-token}
-      validFrom: 2026-01-01T00:00:00Z
-      validUntil: 2030-12-31T23:59:59Z
+      headerName: X-License-Token        # 携带 Token 的请求头名称
+      expectedToken: ${LICENSE_TOKEN:demo-token}  # 期望的 Token 值，支持环境变量注入
+      validFrom: 2026-01-01T00:00:00Z    # 许可证生效时间（ISO-8601）
+      validUntil: 2030-12-31T23:59:59Z   # 许可证过期时间（ISO-8601）

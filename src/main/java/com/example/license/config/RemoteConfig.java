@@ -20,7 +20,7 @@ public record RemoteConfig(
         FAIL_OPEN, FAIL_CLOSED
     }
 
-    /** Returns this config merged with any non-null fields from {@code override}. */
+    /** 将 {@code override} 中有效值（>0 或非 null）覆盖到当前远程配置并返回新实例。 */
     public RemoteConfig mergeWith(RemoteConfig override) {
         if (override == null) return this;
         int mergedTimeout = override.timeoutMs() > 0 ? override.timeoutMs() : this.timeoutMs;

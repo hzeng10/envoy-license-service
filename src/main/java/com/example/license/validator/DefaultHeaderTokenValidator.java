@@ -21,11 +21,16 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class DefaultHeaderTokenValidator implements LicenseValidator {
 
+    /** 返回校验器名称，与规则 YAML 中的 {@code validator: default-header-token} 对应。 */
     @Override
     public String name() {
         return "default-header-token";
     }
 
+    /**
+     * 从请求头中取出 Token 并与配置值比对，同时检查 {@code validFrom}/{@code validUntil} 时间窗口。
+     * 返回已完成的 Future，不产生任何 I/O。
+     */
     @Override
     public CompletableFuture<ValidationResult> validate(ValidationRequest request) {
         Map<String, Object> cfg = request.rule().config();

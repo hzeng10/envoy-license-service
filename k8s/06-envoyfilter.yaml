@@ -1,6 +1,6 @@
-# Wires the license ext_authz gRPC service into every Envoy sidecar in the default namespace.
-# Uses EnvoyFilter so the istio-system/istio ConfigMap is never modified.
-# The filter is inserted BEFORE envoy.filters.http.router on all SIDECAR_INBOUND filter chains.
+# 将许可证 ext_authz gRPC 服务注入到 default 命名空间所有 sidecar 的入站过滤链
+# 使用 EnvoyFilter 直接修补 Envoy 配置，无需修改 istio-system/istio ConfigMap
+# 过滤器插入在 envoy.filters.http.router 之前，确保每个入站请求都经过许可证校验
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
@@ -10,13 +10,13 @@ spec:
   configPatches:
   - applyTo: HTTP_FILTER
     match:
-      context: SIDECAR_INBOUND
+      context: SIDECAR_INBOUND  # 仅作用于 sidecar 的入站流量
       listener:
         filterChain:
           filter:
             name: envoy.filters.network.http_connection_manager
             subFilter:
-              name: envoy.filters.http.router
+              name: envoy.filters.http.router  # 插入到 router 过滤器之前
     patch:
       operation: INSERT_BEFORE
       value:
@@ -25,8 +25,9 @@ spec:
           "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
           grpc_service:
             envoy_grpc:
+              # 引用许可证服务的 Envoy outbound cluster 名称
               cluster_name: outbound|9191||license-validation-service.default.svc.cluster.local
-            timeout: 0.25s
+            timeout: 0.25s        # ext_authz 调用超时，超时后按 failure_mode_allow 策略处理
           transport_api_version: V3
-          failure_mode_allow: false
+          failure_mode_allow: false  # 超时或错误时拒绝请求（fail-closed）
           include_peer_certificate: false

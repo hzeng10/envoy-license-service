@@ -23,11 +23,13 @@ public class LicenseConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(LicenseConfiguration.class);
 
+    /** 创建规则加载器，传入 Spring 环境（用于变量替换）和已注册校验器名称集合。 */
     @Bean
     public RuleSetLoader ruleSetLoader(Environment env, ValidatorRegistry validatorRegistry) {
         return new RuleSetLoader(env, validatorRegistry.names());
     }
 
+    /** 启动时加载规则文件并创建持有者；文件不存在时回退到 classpath 内置默认规则。 */
     @Bean
     public RuleSetHolder ruleSetHolder(LicenseProperties properties, RuleSetLoader loader) {
         String rulesFile = properties.getRulesFile();
@@ -50,6 +52,7 @@ public class LicenseConfiguration {
         return new RuleSetHolder(initial);
     }
 
+    /** 创建规则文件热重载监视器，按配置的轮询间隔检测文件变更并原子替换规则集。 */
     @Bean
     public RuleSetWatcher ruleSetWatcher(LicenseProperties properties, RuleSetLoader loader,
                                          RuleSetHolder holder, MeterRegistry meterRegistry) {

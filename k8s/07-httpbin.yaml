@@ -1,6 +1,6 @@
-# Minimal httpbin test workload. sidecar.istio.io/inject: "true" opts this pod into Istio
-# sidecar injection without requiring a namespace-level label — the webhook
-# object.sidecar-injector.istio.io handles per-object opt-in on unlabeled namespaces.
+# httpbin 测试工作负载：用于验证 ext_authz 拦截是否生效
+# sidecar.istio.io/inject: "true" 必须设置为 Pod 标签（不是注解），
+# 否则 Istio mutating webhook 的 objectSelector 无法匹配，sidecar 不会被注入
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         app: httpbin
-        sidecar.istio.io/inject: "true"
+        sidecar.istio.io/inject: "true"  # Pod 标签，触发 Istio sidecar 自动注入（2/2 READY）
     spec:
       containers:
         - name: httpbin
@@ -33,6 +33,7 @@ spec:
               cpu: "200m"
               memory: "128Mi"
 ---
+# httpbin ClusterIP Service，ext_authz 测试时通过此地址访问
 apiVersion: v1
 kind: Service
 metadata:

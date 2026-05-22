@@ -1,3 +1,5 @@
+# 许可证校验服务 Deployment
+# 注意：此 Pod 不注入 Istio sidecar，以避免 ext_authz 自我调用形成死循环
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,9 +17,9 @@ spec:
       labels:
         app: license-validation-service
       annotations:
-        # No sidecar — the ext_authz server is not a mesh workload
+        # 禁止 Istio 注入 sidecar——ext_authz 服务器不是网格内工作负载
         sidecar.istio.io/inject: "false"
-        # Exclude the ext_authz service itself from ext_authz checks to avoid a loop
+        # 防止出站流量经过 9191 端口被拦截，避免自我授权死循环
         traffic.sidecar.istio.io/excludeOutboundPorts: "9191"
     spec:
       containers:
@@ -25,17 +27,20 @@ spec:
           image: license-validation-service:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - name: grpc
+            - name: grpc             # gRPC ext_authz 服务端口
               containerPort: 9191
               protocol: TCP
-            - name: http-management
+            - name: http-management  # actuator 健康检查和 Prometheus 指标端口
               containerPort: 8080
               protocol: TCP
           env:
+            # JVM 调优：使用 ZGC（低延迟 GC），限制堆和非堆大小以适配 384Mi 容器
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+UseZGC -XX:+ZGenerational -Xms64m -Xmx160m -XX:MaxMetaspaceSize=80m -XX:ReservedCodeCacheSize=32m -XX:MaxDirectMemorySize=32m"
+            # 开启 gRPC 服务反射，方便使用 grpcurl 调试
             - name: LICENSE_GRPC_REFLECTION
               value: "true"
+            # 从 Secret 注入 Token 值（optional=true：Secret 不存在时使用 YAML 中的默认值）
             - name: LICENSE_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -44,7 +49,7 @@ spec:
                   optional: true
           volumeMounts:
             - name: license-rules
-              mountPath: /etc/license
+              mountPath: /etc/license  # ConfigMap 挂载路径，服务从此处读取规则文件
               readOnly: true
           resources:
             requests:
@@ -52,12 +57,12 @@ spec:
               memory: "256Mi"
             limits:
               cpu: "1000m"
-              memory: "384Mi"
+              memory: "384Mi"  # 需 384Mi：堆 160M + Metaspace 80M + 代码缓存 32M + 直接内存 32M + 线程栈
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 15
+            initialDelaySeconds: 15  # 等待 JVM 启动完成后再探测
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
@@ -70,4 +75,4 @@ spec:
       volumes:
         - name: license-rules
           configMap:
-            name: license-rules
+            name: license-rules  # 引用 01-configmap.yaml 中的 ConfigMap

@@ -40,11 +40,13 @@ public class RuleSetLoader {
     private final Environment env;
     private final Set<String> registeredValidatorNames;
 
+    /** 注入 Spring Environment（用于 ${VAR} 占位符解析）和已注册的校验器名称集合。 */
     public RuleSetLoader(Environment env, Set<String> registeredValidatorNames) {
         this.env = env;
         this.registeredValidatorNames = registeredValidatorNames;
     }
 
+    /** 读取指定路径的 YAML 文件，解析占位符后编译为不可变的 {@link RuleSet}。 */
     public RuleSet load(String filePath) throws IOException {
         String raw = Files.readString(Path.of(filePath));
         String resolved = PLACEHOLDER_HELPER.replacePlaceholders(raw,

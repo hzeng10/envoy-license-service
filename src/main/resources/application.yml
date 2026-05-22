@@ -1,7 +1,8 @@
 spring:
   application:
-    name: envoy-license-service
+    name: envoy-license-service  # 应用名称，显示在 actuator/info 和日志中
 
+# Tomcat HTTP 服务器端口，仅用于 actuator 健康检查和 Prometheus 指标暴露
 server:
   port: 8080
 
@@ -9,29 +10,30 @@ management:
   endpoints:
     web:
       exposure:
+        # 对外暴露的 actuator 端点：健康检查、基本信息、Prometheus 指标
         include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:
-        enabled: true
-      show-details: always
+        enabled: true       # 开启 /actuator/health/liveness 和 /actuator/health/readiness
+      show-details: always  # 在健康响应中显示各组件详情
   health:
     livenessstate:
-      enabled: true
+      enabled: true   # 将 Spring LivenessState 纳入存活探针
     readinessstate:
-      enabled: true
+      enabled: true   # 将 Spring ReadinessState 纳入就绪探针
   prometheus:
     metrics:
       export:
-        enabled: true
+        enabled: true  # 开启 Micrometer → Prometheus 指标导出
 
 license:
-  rules-file: /etc/license/license-rules.yml
-  watch-interval-seconds: 5
-  grpc-port: 9191
-  grpc-reflection: false
+  rules-file: /etc/license/license-rules.yml  # 规则文件路径，通常为 ConfigMap 挂载位置
+  watch-interval-seconds: 5                   # 规则文件轮询间隔（秒），支持热重载
+  grpc-port: 9191                             # gRPC ext_authz 服务监听端口
+  grpc-reflection: false                      # 是否开启 gRPC 服务反射（生产环境建议关闭）
 
 logging:
   level:
-    com.example.license: INFO
-    io.grpc: WARN
+    com.example.license: INFO  # 业务代码日志级别
+    io.grpc: WARN              # 屏蔽 gRPC 框架的 INFO 日志，降低噪音

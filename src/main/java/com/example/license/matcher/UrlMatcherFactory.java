@@ -25,8 +25,8 @@ public final class UrlMatcherFactory {
     private UrlMatcherFactory() {}
 
     /**
-     * Creates a combined matcher for the path expression and the (possibly empty) methods list.
-     * An empty / {@code ["*"]} methods list means any method is accepted.
+     * 根据路径表达式和方法列表创建组合匹配器。
+     * 方法列表为空或包含 {@code "*"} 时表示接受任意 HTTP 方法。
      */
     public static UrlMatcher create(String pathExpr, List<String> methods) {
         if (pathExpr == null || pathExpr.isBlank()) {

@@ -20,6 +20,7 @@ public class ValidatorRegistry {
     private final Map<String, LicenseValidator> validators;
     private final LicenseValidator defaultValidator;
 
+    /** 从 Spring 上下文注入所有 {@link LicenseValidator} 实现，按 name() 构建索引；缺少默认校验器时快速失败。 */
     public ValidatorRegistry(List<LicenseValidator> validators) {
         this.validators = validators.stream()
                 .collect(Collectors.toUnmodifiableMap(LicenseValidator::name, Function.identity()));
@@ -29,13 +30,12 @@ public class ValidatorRegistry {
         }
     }
 
-    /**
-     * Returns the validator with the given name, or the default validator if the name is not found.
-     */
+    /** 按名称查找校验器，名称未注册时回退到默认校验器（{@code default-header-token}）。 */
     public LicenseValidator get(String name) {
         return validators.getOrDefault(name, defaultValidator);
     }
 
+    /** 返回所有已注册校验器的名称集合，供 {@link com.example.license.config.RuleSetLoader} 校验规则配置时使用。 */
     public Set<String> names() {
         return validators.keySet();
     }

@@ -30,6 +30,7 @@ public class ResilienceDecorators {
     private final CircuitBreaker circuitBreaker;
     private final RemoteConfig.FailurePolicy failurePolicy;
 
+    /** 按规则 ID 和远程配置初始化 Bulkhead 和 CircuitBreaker，每个规则独立实例。 */
     public ResilienceDecorators(String id, RemoteConfig config) {
         this.timeoutMs = config.timeoutMs();
         this.failurePolicy = config.onFailure();
@@ -50,8 +51,8 @@ public class ResilienceDecorators {
     }
 
     /**
-     * Executes {@code supplier} with bulkhead protection, circuit-breaker, and a wall-clock timeout.
-     * On failure returns a result according to the configured {@code onFailure} policy.
+     * 以限流（Bulkhead）、熔断（CircuitBreaker）和超时保护执行异步校验调用。
+     * 任意保护触发时按配置的 {@code onFailure} 策略返回"放行"或"拒绝"结果。
      */
     public CompletableFuture<ValidationResult> execute(Supplier<CompletableFuture<ValidationResult>> supplier) {
         if (!bulkhead.tryAcquirePermission()) {
@@ -95,7 +96,9 @@ public class ResilienceDecorators {
                 });
     }
 
+    /** 返回熔断器实例，供测试或监控使用。 */
     public CircuitBreaker circuitBreaker() { return circuitBreaker; }
+    /** 返回舱壁实例，供测试或监控使用。 */
     public Bulkhead bulkhead() { return bulkhead; }
 
     private ValidationResult failureResult() {
@@ -106,6 +109,7 @@ public class ResilienceDecorators {
                 Map.of("content-type", "application/json"));
     }
 
+    /** 预留的资源释放方法；当前实现基于 CompletableFuture.orTimeout，无需额外清理。 */
     public void shutdown() {
         // No executor to shut down now that we use CompletableFuture.orTimeout
     }

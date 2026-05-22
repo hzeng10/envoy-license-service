@@ -26,13 +26,14 @@ public class DenyResponseBuilder {
             .setOkResponse(OkHttpResponse.newBuilder().build())
             .build();
 
+    /** 返回预构建的全局"允许"响应单例，零分配。 */
     public CheckResponse allow() {
         return ALLOW_RESPONSE;
     }
 
     /**
-     * Builds a deny response using the validator result, optionally overriding headers/body
-     * from the rule's {@link DenyConfig}.
+     * 构建 Envoy 拒绝响应：优先使用校验结果中的状态码/响应体/响应头，
+     * 缺失时回退到规则的 {@link DenyConfig} 默认值。
      */
     public CheckResponse deny(ValidationResult result, DenyConfig ruleConfig) {
         int status = result.denyStatus() > 0 ? result.denyStatus() : ruleConfig.status();

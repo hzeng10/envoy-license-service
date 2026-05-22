@@ -9,6 +9,7 @@ public class RuleSetHolder {
 
     private final AtomicReference<RuleSet> ref = new AtomicReference<>();
 
+    /** 使用初始规则集构造持有者。 */
     public RuleSetHolder(RuleSet initial) {
         ref.set(initial);
     }

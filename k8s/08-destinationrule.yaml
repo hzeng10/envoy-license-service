@@ -1,6 +1,12 @@
-# Disables Istio mTLS and metadata-exchange TCP prefix for the license service.
-# Without this, Envoy's istio.metadata_exchange filter injects a binary "magic"
-# prefix before the HTTP/2 preface, corrupting gRPC framing on the non-sidecar pod.
+# 为许可证校验服务禁用 Istio mTLS 和 metadata-exchange TCP 前缀
+#
+# 根本原因：Istio 的 istio.metadata_exchange 集群过滤器（enable_discovery: true）
+# 在连接非 sidecar 端点时，会在 HTTP/2 握手前发送一段二进制"魔术"前缀。
+# 许可证服务的 Netty gRPC 服务器不理解该前缀，导致每次 gRPC 调用都触发 250ms 超时，
+# 最终 Envoy 以 failure_mode_allow: false 返回 403（响应标志 UAEX）。
+#
+# 解决方案：设置 tls.mode: DISABLE，移除所有 transportSocketMatches，
+# 恢复到标准 HTTP/2 明文 gRPC 通信。
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
@@ -10,4 +16,4 @@ spec:
   host: license-validation-service.default.svc.cluster.local
   trafficPolicy:
     tls:
-      mode: DISABLE
+      mode: DISABLE  # 禁用 mTLS，同时抑制 metadata-exchange 握手

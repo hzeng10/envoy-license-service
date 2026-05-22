@@ -5,6 +5,6 @@ package com.example.license.matcher;
  */
 public interface UrlMatcher {
 
-    /** Returns true if the request path and HTTP method satisfy this rule's match criteria. */
+    /** 判断请求路径和 HTTP 方法是否满足本规则的匹配条件，满足返回 {@code true}。 */
     boolean matches(String path, String method);
 }

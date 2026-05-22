@@ -28,6 +28,7 @@ public class GrpcServerLifecycle implements SmartLifecycle {
     private Server server;
     private volatile boolean running = false;
 
+    /** 注入 ext_authz 服务实现和配置属性，从属性中读取端口及反射开关。 */
     public GrpcServerLifecycle(ExtAuthzService extAuthzService,
                                 com.example.license.config.LicenseProperties properties) {
         this.extAuthzService = extAuthzService;
@@ -35,6 +36,7 @@ public class GrpcServerLifecycle implements SmartLifecycle {
         this.enableReflection = properties.isGrpcReflection();
     }
 
+    /** 构建并启动 Netty gRPC 服务器；线程数为 CPU 核心数的两倍。 */
     @Override
     public void start() {
         int workers = Runtime.getRuntime().availableProcessors() * 2;
@@ -57,6 +59,7 @@ public class GrpcServerLifecycle implements SmartLifecycle {
         }
     }
 
+    /** 优雅关闭 gRPC 服务器，等待最多 10 秒完成处理中的请求。 */
     @Override
     public void stop() {
         running = false;
@@ -74,11 +77,13 @@ public class GrpcServerLifecycle implements SmartLifecycle {
         }
     }
 
+    /** 返回服务器是否处于运行状态。 */
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    /** 返回 SmartLifecycle 启动阶段编号，确保在所有业务 Bean 初始化完成后再启动服务器。 */
     @Override
     public int getPhase() {
         return Integer.MAX_VALUE - 100;

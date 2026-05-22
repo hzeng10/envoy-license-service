@@ -44,6 +44,7 @@ public class ExtAuthzService extends AuthorizationGrpc.AuthorizationImplBase {
     private final Counter unmatchedCounter;
     private final Timer checkTimer;
 
+    /** 注入依赖并初始化 Micrometer 计数器（allow/deny/unmatched）和耗时计时器。 */
     public ExtAuthzService(RuleSetHolder ruleSetHolder,
                            ValidatorRegistry validatorRegistry,
                            ValidationCache cache,
@@ -64,6 +65,10 @@ public class ExtAuthzService extends AuthorizationGrpc.AuthorizationImplBase {
                 .register(meterRegistry);
     }
 
+    /**
+     * Envoy ext_authz 鉴权入口（热路径）。匹配规则后异步调用校验器，通过 CompletableFuture 回调写回响应，
+     * 全程不阻塞 Netty 事件循环线程。
+     */
     @Override
     public void check(CheckRequest request, StreamObserver<CheckResponse> responseObserver) {
         Timer.Sample sample = Timer.start();

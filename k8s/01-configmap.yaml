@@ -1,3 +1,5 @@
+# 许可证规则 ConfigMap：以文件形式挂载到 /etc/license/license-rules.yml
+# 服务启动时加载此规则文件，并在文件变更时自动热重载（无需重启 Pod）
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,34 +9,36 @@ metadata:
     app: license-validation-service
 data:
   license-rules.yml: |
+    # 全局默认值，所有规则均可覆盖
     defaults:
-      unmatchedPolicy: allow
-      cacheTtlSeconds: 30
-      negativeCacheTtlSeconds: 5
-      flushCacheOnReload: false
+      unmatchedPolicy: allow       # 无匹配规则时放行
+      cacheTtlSeconds: 30          # 通过结果缓存 TTL（秒）
+      negativeCacheTtlSeconds: 5   # 拒绝结果缓存 TTL（秒）
+      flushCacheOnReload: false     # 热重载时是否清空缓存
       remote:
-        timeoutMs: 100
-        bulkheadMaxConcurrent: 64
-        onFailure: failClosed
+        timeoutMs: 100              # 远程校验超时（毫秒）
+        bulkheadMaxConcurrent: 64   # 最大并发远程调用数
+        onFailure: failClosed       # 失败策略：failClosed（拒绝）或 failOpen（放行）
         circuitBreaker:
-          failureRateThreshold: 50.0
-          slidingWindowSize: 50
-          openStateSeconds: 10
-          halfOpenPermitted: 5
+          failureRateThreshold: 50.0  # 熔断触发失败率（%）
+          slidingWindowSize: 50       # 滑动窗口请求数
+          openStateSeconds: 10        # 熔断器开启时长（秒）
+          halfOpenPermitted: 5        # 半开状态试探请求数
       deny:
-        status: 403
-        body: '{"code":"LICENSE_INVALID","message":"License rule violated"}'
+        status: 403                                                        # 拒绝响应 HTTP 状态码
+        body: '{"code":"LICENSE_INVALID","message":"License rule violated"}' # 拒绝响应体
         headers:
           content-type: application/json
 
+    # 规则列表（按顺序匹配，第一条命中生效）
     rules:
-      - id: example-api
+      - id: example-api            # 规则唯一 ID
         match:
-          path: /api/**
+          path: /api/**            # Ant 风格路径，匹配所有 /api/ 子路径
           methods: [GET, POST, PUT, DELETE]
-        validator: default-header-token
+        validator: default-header-token   # 使用内置 Header Token 校验器
         config:
-          headerName: X-License-Token
-          expectedToken: ${LICENSE_TOKEN:demo-token}
-          validFrom: 2026-01-01T00:00:00Z
-          validUntil: 2030-12-31T23:59:59Z
+          headerName: X-License-Token     # Token 所在请求头
+          expectedToken: ${LICENSE_TOKEN:demo-token}  # 期望 Token，支持环境变量
+          validFrom: 2026-01-01T00:00:00Z  # 许可证生效时间
+          validUntil: 2030-12-31T23:59:59Z # 许可证过期时间

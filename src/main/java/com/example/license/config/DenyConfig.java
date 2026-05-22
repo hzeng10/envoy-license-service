@@ -16,7 +16,7 @@ public record DenyConfig(
             Map.of("content-type", "application/json")
     );
 
-    /** Returns this record with any non-null fields from {@code override} applied. */
+    /** 将 {@code override} 中非空/非零的字段覆盖到当前配置并返回新实例；{@code override} 为 null 时返回自身。 */
     public DenyConfig mergeWith(DenyConfig override) {
         if (override == null) return this;
         int mergedStatus = override.status() > 0 ? override.status() : this.status;
